@@ -861,10 +861,17 @@ def get_mesh_grid(*args: Any, **kwargs: Any):
         )
 
     num_devices_available = ttnn.get_num_devices()
+    # Under tt-run every rank sees only its own devices while the mesh spans all
+    # ranks, so the visible devices must not shrink the requested mesh.
+    visible_devices = (
+        None
+        if ttnn.using_distributed_env()
+        else os.environ.get(TTPlatform.device_control_env_var)
+    )
     mesh_grid = _resolve_mesh_grid(
         os.environ.get("MESH_DEVICE"),
         num_devices_available,
-        os.environ.get(TTPlatform.device_control_env_var),
+        visible_devices,
     )
 
     assert ttnn.using_distributed_env() or (
